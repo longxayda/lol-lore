@@ -1,8 +1,13 @@
 from selenium import webdriver
 from const import URL
-URL = 'https://universe.leagueoflegends.com/en_US/'
+import os
 
-def get_content(command: str, champion: str = None, base_url: str = URL):
+def build_path(dir: str = ''):
+    path = str(os.path.dirname((os.path.realpath(__file__))))
+    path = path + '/' + dir
+    return path.replace('\\', '/')
+
+def get_content(command: str, champion: str = '', base_url: str = URL):
     def build_url():
         direction = {
             'home': 'champions',
@@ -14,7 +19,7 @@ def get_content(command: str, champion: str = None, base_url: str = URL):
             print('Select from the folllowing commands: %s' % str(commands)[1:-1])
             return None
         rephrased_url = base_url + direction[command]
-        return rephrased_url % champion if '%s' in rephrased_url else rephrased_url
+        return rephrased_url % champion.lower() if '%s' in rephrased_url else rephrased_url
 
     def fetch(url: str):
         opts = webdriver.ChromeOptions()
