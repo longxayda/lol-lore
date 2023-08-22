@@ -1,2 +1,2 @@
 rm out/html -rf
-rm out/json/info -rf
+rm out/json -rf
