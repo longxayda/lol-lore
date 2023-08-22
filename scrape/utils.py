@@ -59,6 +59,6 @@ def parallelize(iterables: T.Iterable, function: T.Callable, timeout: int = None
     
 def coalesce(source: T.Dict[str, str], target: T.Dict[str, str]):
     for key in target:
-        value = target[key] if target[key] else source[key]
+        value = target[key] if (target[key] or key not in source) else source[key]
         target[key] = value
     return target

@@ -68,12 +68,21 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
     with open(html_path, 'w') as file:
         file.write(str(soup.prettify()))
 
-    champ_race = recursive_find(soup, [['div', {'class': re.compile(r'race_[a-zA-Z0-9]+')}], ['h6']])
-    champ_name = recursive_find(soup, [['div', {'class': re.compile(r'titles_[a-zA-Z0-9]+')}], ['span']])
-    champ_quote = recursive_find(soup, [['li', {'class': re.compile(r'quote_[a-zA-Z0-9]+')}], ['p']])
-    champ_type = recursive_find(soup, [['div', {'class': re.compile(r'typeDescription_[a-zA-Z0-9]+')}], ['h6']])
-    champ_biography_text = recursive_find(soup, [['div', {'class': re.compile(r'biographyText_[a-zA-Z0-9]+')}], ['p']])
-    champ_region = recursive_find(soup, [['div', {'class': re.compile(r'factionName_[a-zA-Z0-9]+')}], ['h6'], ['span']])
+    patterns = {
+        'race': r'race_[a-zA-Z0-9]+',
+        'name': r'titles_[a-zA-Z0-9]+',
+        'quote': r'quote_[a-zA-Z0-9]+',
+        'type': r'typeDescription_[a-zA-Z0-9]+',
+        'biography_text': r'biographyText_[a-zA-Z0-9]+',
+        'region': r'factionName_[a-zA-Z0-9]+',
+    }
+
+    champ_race = recursive_find(soup, [['div', {'class': re.compile(patterns['race'])}], ['h6']])
+    champ_quote = recursive_find(soup, [['li', {'class': re.compile(patterns['quote'])}], ['p']])
+    champ_type = recursive_find(soup, [['div', {'class': re.compile(patterns['type'])}], ['h6']])
+    champ_name = recursive_find(soup, [['div', {'class': re.compile(patterns['name'])}], ['span']])
+    champ_region = recursive_find(soup, [['div', {'class': re.compile(patterns['region'])}], ['h6'], ['span']])
+    champ_biography_text = recursive_find(soup, [['div', {'class': re.compile(patterns['biography_text'])}], ['p']])
 
     output = {
         'name': champ_name,
@@ -82,6 +91,7 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
         'region': champ_region,
         'quote': champ_quote[1:-1] if champ_quote else champ_quote,
         'biography_text': champ_biography_text,
+        'ref_name': search_name
     }
     
     os.makedirs(directory_path, exist_ok=True)
@@ -98,13 +108,44 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
     return output
     
 
-def get_lore(name: str):
-    # TODO: Get biography of champ
-    # source = get_content('story', name)
-    # soup = bs4.BeautifulSoup(source, 'html.parser')
-    # with open(build_path(f'../out/html/{name}-lore.html'), 'w', encoding='utf-8') as file:
-    #     file.write(str(soup.prettify()))
-    pass
+def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
+    search_name = data['ref_name']
+    name = data['name']
+
+    html_path = build_path(f'../out/html/{name}-lore.html')
+    directory_path = build_path(f'../out/json/info')
+    json_path = build_path(f'../out/json/info/{name}.json')
+    source = get_content('story', search_name)
+    soup = bs4.BeautifulSoup(source, 'html.parser')
+
+    with open(html_path, 'w') as file:
+        file.write(str(soup.prettify()))
+
+    pattern = r'content_(.*)?'
+
+    paragraphs = [p.string for p in soup.find('div', {'class': re.compile(pattern)}).find_all('p') if p.string is not None]
+
+    if os.path.isfile(json_path):
+        with open(json_path, 'r', encoding='utf-8') as file:
+            temp = json.load(file)
+    else:
+        temp = {}
+    
+    output = {**temp, 'biography': paragraphs}
+
+    os.makedirs(directory_path, exist_ok=True)
+
+    output = coalesce(temp, output)
+    
+    with open(json_path, 'w') as file:
+        json.dump(output, file, indent=2)
+    
+    return output
+
+def get_champ_full_info(data: T.Dict[str, str]):
+    champ_info = get_champ(data)
+    champ_full_info = get_lore(data)
+    return champ_full_info
 
 if __name__ == '__main__':
     
@@ -127,13 +168,12 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1:
         champ_name = sys.argv[1]
-        print(champ_name)
         output = []
         for champ in champs:
             if champ['name'].lower() == champ_name or champ['ref_name'] == champ_name.lower():
-                output.append(get_champ(champ)) 
+                output.append(get_champ_full_info(champ))
                 break
     else:
-        output = parallelize(champs, get_champ, 60)
+        output = parallelize(champs, get_champ_full_info, 60)
 
     print(output)
