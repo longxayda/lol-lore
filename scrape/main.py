@@ -57,13 +57,15 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
             
 
     search_name = data['ref_name']
-    name = data['name']
 
-    html_path = build_path(f'../out/html/{name}.html')
-    directory_path = build_path(f'../out/json/info')
-    json_path = build_path(f'../out/json/info/{name}.json')
+    html_path = build_path(f'../out/html/{search_name}/info.html')
+    json_directory_path = build_path(f'../out/json/info/{search_name}')
+    html_directory_path = build_path(f'../out/html/{search_name}')
+    json_path = build_path(f'../out/json/info/{search_name}/info.json')
     source = get_content('champion', search_name)
     soup = bs4.BeautifulSoup(source, 'html.parser')
+
+    os.makedirs(html_directory_path, exist_ok=True)
 
     with open(html_path, 'w') as file:
         file.write(str(soup.prettify()))
@@ -94,7 +96,7 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
         'ref_name': search_name
     }
     
-    os.makedirs(directory_path, exist_ok=True)
+    os.makedirs(json_directory_path, exist_ok=True)
 
     if os.path.isfile(json_path):
         with open(json_path, 'r', encoding='utf-8') as file:
@@ -110,13 +112,15 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
 
 def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
     search_name = data['ref_name']
-    name = data['name']
 
-    html_path = build_path(f'../out/html/{name}-lore.html')
-    directory_path = build_path(f'../out/json/info')
-    json_path = build_path(f'../out/json/info/{name}.json')
+    html_path = build_path(f'../out/html/{search_name}/lore.html')
+    json_directory_path = build_path(f'../out/json/info/{search_name}')
+    html_directory_path = build_path(f'../out/html/{search_name}')
+    json_path = build_path(f'../out/json/info/{search_name}/lore.json')
     source = get_content('story', search_name)
     soup = bs4.BeautifulSoup(source, 'html.parser')
+
+    os.makedirs(html_directory_path, exist_ok=True)
 
     with open(html_path, 'w') as file:
         file.write(str(soup.prettify()))
@@ -131,9 +135,9 @@ def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
     else:
         temp = {}
     
-    output = {**temp, 'biography': paragraphs}
+    output = {'biography': paragraphs}
 
-    os.makedirs(directory_path, exist_ok=True)
+    os.makedirs(json_directory_path, exist_ok=True)
 
     output = coalesce(temp, output)
     
@@ -144,8 +148,12 @@ def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
 
 def get_champ_full_info(data: T.Dict[str, str]):
     champ_info = get_champ(data)
-    champ_full_info = get_lore(data)
-    return champ_full_info
+    champ_lore = get_lore(data)
+    search_name = data["ref_name"]
+    json_path = build_path(f'../out/json/info/{search_name}/data.json')
+    with open(json_path, 'w', encoding='utf-8') as file:
+        json.dump({**champ_info, **champ_lore}, file, indent=2)
+    return champ_lore
 
 if __name__ == '__main__':
     
