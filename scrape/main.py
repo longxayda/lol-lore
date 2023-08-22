@@ -2,7 +2,8 @@ from utils import (
     get_content, 
     build_path,
     parallelize,
-    coalesce
+    coalesce,
+    validate
 )
 import typing as T
 import bs4
@@ -127,7 +128,14 @@ def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
 
     pattern = r'content_(.*)?'
 
-    paragraphs = [p.string for p in soup.find('div', {'class': re.compile(pattern)}).find_all('p') if p.string is not None]
+    paragraphs = [
+        p for p in soup.find('div', {'class': re.compile(pattern)}).find_all(['p', 'div']) 
+        if p.string or p.get_text() is not None
+    ]
+
+    for idx, paragraph in enumerate(paragraphs):
+        value = paragraph.string if paragraph.string else paragraph.get_text()
+        paragraphs[idx] = value
 
     if os.path.isfile(json_path):
         with open(json_path, 'r', encoding='utf-8') as file:
@@ -182,6 +190,18 @@ if __name__ == '__main__':
                 output.append(get_champ_full_info(champ))
                 break
     else:
-        output = parallelize(champs, get_champ_full_info, 60)
+        retries = 5
+        invalid_path = build_path('../out/json/invalid.json')
+        while len(champs) and retries:
+            validate()
+            bad_champs = {champ['ref_name'] for champ in champs}
+            if os.path.isfile(invalid_path):
+                with open(invalid_path, 'r', encoding='utf-8') as file:
+                    bad_champs = {data['ref_name'] for data in json.load(file)}
+            
+            print('List of error champs:', list(bad_champs))
+            champs = list(filter(lambda champ: champ['ref_name'] in bad_champs, champs))
+            print('Number of retries left:', retries)
+            output = parallelize(champs, get_champ_full_info, 60)
+            retries -= 1
 
-    print(output)
