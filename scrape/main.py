@@ -132,9 +132,11 @@ def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
         if p.string or p.get_text() is not None
     ]
 
-    for idx, paragraph in enumerate(paragraphs):
-        value = paragraph.string if paragraph.string else paragraph.get_text()
-        paragraphs[idx] = value
+    new_paragraphs = []
+    for paragraph in paragraphs:
+        value: str = paragraph.string if paragraph.string else paragraph.get_text()
+        if value:
+            new_paragraphs.append(value)
 
     if os.path.isfile(json_path):
         with open(json_path, 'r', encoding='utf-8') as file:
@@ -142,7 +144,7 @@ def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
     else:
         temp = {}
     
-    output = {'biography': paragraphs}
+    output = {'biography': new_paragraphs}
 
     os.makedirs(json_directory_path, exist_ok=True)
 
@@ -196,7 +198,7 @@ if __name__ == '__main__':
             bad_champs = {champ['ref_name'] for champ in champs}
             if os.path.isfile(invalid_path):
                 with open(invalid_path, 'r', encoding='utf-8') as file:
-                    bad_champs = {data['ref_name'] for data in json.load(file)}
+                    bad_champs = {data for data in json.load(file)}
             
             print('List of error champs:', list(bad_champs))
             champs = list(filter(lambda champ: champ['ref_name'] in bad_champs, champs))
