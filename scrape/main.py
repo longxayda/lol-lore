@@ -202,6 +202,6 @@ if __name__ == '__main__':
             print('List of error champs:', list(bad_champs))
             champs = list(filter(lambda champ: champ['ref_name'] in bad_champs, champs))
             print('Number of retries left:', retries)
-            output = parallelize(champs, get_champ_full_info, 60)
+            output = parallelize(champs, get_champ_full_info, 120)
             retries -= 1
 
