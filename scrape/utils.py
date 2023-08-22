@@ -81,18 +81,19 @@ def validate():
 
     precise_path = f'{base_path}/%s/data.json'
 
-    for scrape_dir in scrape_dirs:
-        with open(precise_path % scrape_dir, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-            is_valid = helper(data)
-            if not is_valid:
-                bad_data.append(data)
-            output[scrape_dir] = is_valid
-            
-    invalid_path = build_path('../out/json/invalid.json')
+    if scrape_dirs:
+        for scrape_dir in scrape_dirs:
+            with open(precise_path % scrape_dir, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+                is_valid = helper(data)
+                if not is_valid:
+                    bad_data.append(data)
+                output[scrape_dir] = is_valid
+                
+        invalid_path = build_path('../out/json/invalid.json')
 
-    with open(invalid_path, 'w', encoding='utf-8') as file:
-        json.dump(bad_data, file, indent=2)
+        with open(invalid_path, 'w', encoding='utf-8') as file:
+            json.dump(bad_data, file, indent=2)
 
-    return bad_data, output
+    return bad_data
 

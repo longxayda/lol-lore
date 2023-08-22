@@ -13,9 +13,8 @@ import os
 import sys
 
 
-os.makedirs(build_path('../out/json'), exist_ok=True)
+os.makedirs(build_path('../out/json/info'), exist_ok=True)
 os.makedirs(build_path('../out/html'), exist_ok=True)
-
 
 
 def get_main() -> T.List[T.Dict[str, str]]:
