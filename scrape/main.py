@@ -1,7 +1,8 @@
 from utils import (
     get_content, 
     build_path,
-    parallelize
+    parallelize,
+    coalesce
 )
 import typing as T
 import bs4
@@ -53,12 +54,6 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
         soup = soup.find(*pairs[0])
 
         return recursive_find(soup, pairs[1:])
-    
-    def coalesce(source: T.Dict[str, str], target: T.Dict[str, str]):
-        for key in target:
-            value = target[key] if target[key] else source[key]
-            target[key] = value
-        return target
             
 
     search_name = data['ref_name']
