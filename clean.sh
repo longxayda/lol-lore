@@ -1,2 +1,2 @@
-rm out/html -rf
-rm out/json -rf
+rm output/scraping/html -rf
+rm output/scraping/json -rf

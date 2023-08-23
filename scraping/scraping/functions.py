@@ -1,27 +1,29 @@
-from utils import (
-    get_content, 
-    build_path,
-    parallelize,
-    coalesce,
-    validate
-)
-import typing as T
-import bs4
-import re
-import json
 import os
+import re
 import sys
+import bs4
+import json
+import typing as T
+import scraping.scraping.utilities as utilities
 
+ROOT_DIRECTORY = utilities.get_root_directory()
+OUTPUT_DIRECTORY = ROOT_DIRECTORY + '/output/scraping'
 
-os.makedirs(build_path('../out/json/info'), exist_ok=True)
-os.makedirs(build_path('../out/html'), exist_ok=True)
+JSON_DIRECTORY_PATH = OUTPUT_DIRECTORY + '/json'
+HTML_DIRECTORY_PATH = OUTPUT_DIRECTORY + '/html'
 
+os.makedirs(JSON_DIRECTORY_PATH + '/info', exist_ok=True)
+os.makedirs(HTML_DIRECTORY_PATH, exist_ok=True)
 
 def get_main() -> T.List[T.Dict[str, str]]:
-    source = get_content('home')
-    json_path = build_path('../out/json/champs.json')
+    source = utilities.get_content('home')
+    json_path = JSON_DIRECTORY_PATH + '/champs.json'
+    html_path = HTML_DIRECTORY_PATH + '/champs.html'
     soup = bs4.BeautifulSoup(source, 'html.parser')
     gen: T.Generator[T.Union[bs4.NavigableString, bs4.Tag, None], None, None] = (li for li in soup.find_all('li'))
+    
+    with open(html_path, 'w') as file:
+        file.write(str(soup.prettify()))
 
     output = []
     for li in gen:
@@ -40,6 +42,7 @@ def get_main() -> T.List[T.Dict[str, str]]:
     with open(json_path, 'w') as file:
         json.dump(output, file, indent=2)
 
+    print(len(output))
     return output
 
 def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
@@ -57,12 +60,13 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
             
 
     search_name = data['ref_name']
-
-    html_path = build_path(f'../out/html/{search_name}/info.html')
-    json_directory_path = build_path(f'../out/json/info/{search_name}')
-    html_directory_path = build_path(f'../out/html/{search_name}')
-    json_path = build_path(f'../out/json/info/{search_name}/info.json')
-    source = get_content('champion', search_name)
+    
+    json_directory_path = JSON_DIRECTORY_PATH + f'/info/{search_name}'
+    html_directory_path = HTML_DIRECTORY_PATH + f'/{search_name}'
+    html_path = html_directory_path + '/info.html'
+    json_path = json_directory_path + '/info.json'
+    
+    source = utilities.get_content('champion', search_name)
     soup = bs4.BeautifulSoup(source, 'html.parser')
 
     os.makedirs(html_directory_path, exist_ok=True)
@@ -102,7 +106,7 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
         with open(json_path, 'r', encoding='utf-8') as file:
             temp = json.load(file)
 
-        output = coalesce(temp, output)
+        output = utilities.coalesce(temp, output)
     
     with open(json_path, 'w') as file:
         json.dump(output, file, indent=2)
@@ -113,11 +117,12 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
 def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
     search_name = data['ref_name']
 
-    html_path = build_path(f'../out/html/{search_name}/lore.html')
-    json_directory_path = build_path(f'../out/json/info/{search_name}')
-    html_directory_path = build_path(f'../out/html/{search_name}')
-    json_path = build_path(f'../out/json/info/{search_name}/lore.json')
-    source = get_content('story', search_name)
+    json_directory_path = JSON_DIRECTORY_PATH + f'/info/{search_name}'
+    html_directory_path = HTML_DIRECTORY_PATH + f'/{search_name}'
+    html_path = html_directory_path + '/lore.html'
+    json_path = json_directory_path + '/lore.json'
+
+    source = utilities.get_content('story', search_name)
     soup = bs4.BeautifulSoup(source, 'html.parser')
 
     os.makedirs(html_directory_path, exist_ok=True)
@@ -148,7 +153,7 @@ def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
 
     os.makedirs(json_directory_path, exist_ok=True)
 
-    output = coalesce(temp, output)
+    output = utilities.coalesce(temp, output)
     
     with open(json_path, 'w') as file:
         json.dump(output, file, indent=2)
@@ -159,14 +164,14 @@ def get_champ_full_info(data: T.Dict[str, str]):
     champ_info = get_champ(data)
     champ_lore = get_lore(data)
     search_name = data["ref_name"]
-    json_path = build_path(f'../out/json/info/{search_name}/data.json')
+    json_path = JSON_DIRECTORY_PATH + f'/info/{search_name}/data.json'
+    output = {**champ_info, **champ_lore}
     with open(json_path, 'w', encoding='utf-8') as file:
-        json.dump({**champ_info, **champ_lore}, file, indent=2)
-    return champ_lore
+        json.dump(output, file, indent=2)
+    return output
 
-if __name__ == '__main__':
-    
-    champs_path = build_path('../out/json/champs.json')
+def run():
+    champs_path = JSON_DIRECTORY_PATH + '/champs.json'
     if os.path.isfile(champs_path):
         with open(champs_path, 'r', encoding='utf-8') as file:
             champs = json.load(file)
@@ -183,18 +188,24 @@ if __name__ == '__main__':
             raise Exception('Cannot fetch champions')
         retries -= 1
 
+    output = set()
+    
     if len(sys.argv) > 1:
         champ_name = sys.argv[1]
-        output = []
+
         for champ in champs:
             if champ['name'].lower() == champ_name or champ['ref_name'] == champ_name.lower():
-                output.append(get_champ_full_info(champ))
+                output.add(get_champ_full_info(champ)['ref_name'])
                 break
     else:
-        retries = 5
-        invalid_path = build_path('../out/json/invalid.json')
+        retries = 10
+        invalid_path = JSON_DIRECTORY_PATH + '/invalid.json'
         while len(champs) and retries:
-            validate()
+            validation_result = utilities.validate()
+            print("Validation result:")
+            for key in validation_result:
+                if validation_result[key]:
+                    print('\t', key, ':', validation_result[key])
             bad_champs = {champ['ref_name'] for champ in champs}
             if os.path.isfile(invalid_path):
                 with open(invalid_path, 'r', encoding='utf-8') as file:
@@ -203,6 +214,9 @@ if __name__ == '__main__':
             print('List of error champs:', list(bad_champs))
             champs = list(filter(lambda champ: champ['ref_name'] in bad_champs, champs))
             print('Number of retries left:', retries)
-            output = parallelize(champs, get_champ_full_info, 120)
+            result = utilities.parallelize(champs, get_champ_full_info, 120)
+            output.update([record['ref_name'] for record in result])
             retries -= 1
+    
+    return list(output)
 

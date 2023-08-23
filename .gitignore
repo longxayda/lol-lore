@@ -1,4 +1,4 @@
 env
-out/json
-out/html
+output/scraping/json
+output/scraping/html
 __pycache__
