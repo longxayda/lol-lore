@@ -90,7 +90,7 @@ def validate():
                         res['biography'] = False
                     else:
                         for ele in data[key]:
-                            if ele == '':
+                            if ele == '' or ele.lower() == 'read story':
                                 res['biography'] = False
                                 break
                 else:
@@ -109,29 +109,31 @@ def validate():
     with open(ref_path, 'r', encoding='utf-8') as file:
         ref_data = [data['ref_name'] for data in json.load(file)]
 
+    scrape_dirs = os.listdir(base_path)
 
     output = {}
-    scrape_dirs = os.listdir(base_path)
-    
-    bad_data = [champ_name for champ_name in ref_data if champ_name not in scrape_dirs]
+        
+    bad_data = []
+    for champ_name in ref_data:
+        if champ_name not in scrape_dirs:
+            bad_data.append(champ_name)
+            output[champ_name] = ['everything']
 
-    if scrape_dirs and ref_data:
-        for scrape_dir in scrape_dirs:
-            current_precise_path = precise_path % scrape_dir
-            if os.path.isfile(current_precise_path):
-                with open(current_precise_path, 'r', encoding='utf-8') as file:
-                    data = json.load(file)
-                    missing_fields = helper(data)
-                    if len(missing_fields):
-                        bad_data.append(scrape_dir)
-                    output[scrape_dir] = missing_fields 
-            else:
-                print('Missing this file:', current_precise_path)
-                output[scrape_dir] = False
-                bad_data.append(scrape_dir)
-                print(bad_data)
+    for scrape_dir in scrape_dirs:
+        current_precise_path = precise_path % scrape_dir
+        if os.path.isfile(current_precise_path):
+            with open(current_precise_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+                missing_fields = helper(data)
+                if len(missing_fields):
+                    bad_data.append(scrape_dir)
+                output[scrape_dir] = missing_fields 
+        else:
+            output[scrape_dir] = ['everything']
+            bad_data.append(scrape_dir)
+            print(bad_data)
 
-        with open(invalid_path, 'w', encoding='utf-8') as file:
-            json.dump(bad_data, file, indent=2)
+    with open(invalid_path, 'w', encoding='utf-8') as file:
+        json.dump(bad_data, file, indent=2)
 
     return output
