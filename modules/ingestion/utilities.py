@@ -2,7 +2,6 @@ import re
 import math
 import typing as T
 import modules.scraping.constants
-import modules.ingestion.constants
 import psycopg2
 import psycopg2.sql
 import psycopg2.extensions
