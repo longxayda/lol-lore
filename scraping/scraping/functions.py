@@ -46,19 +46,6 @@ def get_main() -> T.List[T.Dict[str, str]]:
     return output
 
 def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
-    def recursive_find(soup: T.Union[bs4.BeautifulSoup, bs4.Tag], pairs: T.List[T.List]):
-        if soup is None:
-            return None
-        if not len(pairs) or not len(soup.contents) or soup.findChild(pairs[0][0]) is None:
-            soup = soup.get_text() if soup.string is None else soup.string
-            if soup is None:
-                return None
-            return soup.strip()
-        soup = soup.find(*pairs[0])
-
-        return recursive_find(soup, pairs[1:])
-            
-
     search_name = data['ref_name']
     
     json_directory_path = JSON_DIRECTORY_PATH + f'/info/{search_name}'
@@ -83,12 +70,12 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
         'region': r'factionName_[a-zA-Z0-9]+',
     }
 
-    champ_race = recursive_find(soup, [['div', {'class': re.compile(patterns['race'])}], ['h6']])
-    champ_quote = recursive_find(soup, [['li', {'class': re.compile(patterns['quote'])}], ['p']])
-    champ_type = recursive_find(soup, [['div', {'class': re.compile(patterns['type'])}], ['h6']])
-    champ_name = recursive_find(soup, [['div', {'class': re.compile(patterns['name'])}], ['span']])
-    champ_region = recursive_find(soup, [['div', {'class': re.compile(patterns['region'])}], ['h6'], ['span']])
-    champ_biography_text = recursive_find(soup, [['div', {'class': re.compile(patterns['biography_text'])}], ['p']])
+    champ_race = utilities.recursive_find(soup, [['div', {'class': re.compile(patterns['race'])}], ['h6']])
+    champ_quote = utilities.recursive_find(soup, [['li', {'class': re.compile(patterns['quote'])}], ['p']])
+    champ_type = utilities.recursive_find(soup, [['div', {'class': re.compile(patterns['type'])}], ['h6']])
+    champ_name = utilities.recursive_find(soup, [['div', {'class': re.compile(patterns['name'])}], ['span']])
+    champ_region = utilities.recursive_find(soup, [['div', {'class': re.compile(patterns['region'])}], ['h6'], ['span']])
+    champ_biography_text = utilities.recursive_find(soup, [['div', {'class': re.compile(patterns['biography_text'])}], ['p']])
 
     output = {
         'name': champ_name,
@@ -131,14 +118,17 @@ def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
         file.write(str(soup.prettify()))
 
     pattern = r'content_(.*)?'
-
-    paragraphs = [
-        p for p in soup.find('div', {'class': re.compile(pattern)}).find_all(['p', 'div']) 
-        if p.string or p.get_text() is not None
-    ]
-
+        
+    paragraphs_outer = soup.find('div', {'class': re.compile(pattern)})
+    
+    paragraphs = paragraphs_outer.find_all('p')
+    
+    if not len(paragraphs):
+        paragraphs = paragraphs_outer.find_all('div')
+        
     new_paragraphs = []
     for paragraph in paragraphs:
+        paragraph: bs4.Tag = paragraph
         value: str = paragraph.string if paragraph.string else paragraph.get_text()
         if value:
             new_paragraphs.append(value)
@@ -191,15 +181,18 @@ def run():
     output = set()
     
     if len(sys.argv) > 1:
-        champ_name = sys.argv[1]
+        champ_names = sys.argv[1:]
+        for champ_name in champ_names:
+            found = False
+            for champ in champs:
+                if champ['name'].lower() == champ_name or champ['ref_name'] == champ_name.lower():
+                    output.add(get_champ_full_info(champ)['ref_name'])
+                    found = True
+                    break
 
-        for champ in champs:
-            if champ['name'].lower() == champ_name or champ['ref_name'] == champ_name.lower():
-                output.add(get_champ_full_info(champ)['ref_name'])
-                break
-            
-        if not len(output):
-            print('No champion named %s' % champ_name)
+            if not found:
+                print('No champion named %s' % champ_name)
+
     else:
         retries = 10
         invalid_path = JSON_DIRECTORY_PATH + '/invalid.json'
@@ -214,7 +207,7 @@ def run():
                 with open(invalid_path, 'r', encoding='utf-8') as file:
                     bad_champs = {data for data in json.load(file)}
             
-            print('List of error champs:', list(bad_champs))
+            print('List of target champs:', list(bad_champs))
             champs = list(filter(lambda champ: champ['ref_name'] in bad_champs, champs))
             print('Number of retries left:', retries)
             result = utilities.parallelize(champs, get_champ_full_info, 120)

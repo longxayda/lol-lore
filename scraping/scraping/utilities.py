@@ -1,4 +1,5 @@
 import os
+import bs4
 import json
 import time
 import typing as T
@@ -65,12 +66,23 @@ def parallelize(iterables: T.Iterable, function: T.Callable, timeout: int = None
                 break
         return output
     
-    
 def coalesce(source: T.Dict[str, str], target: T.Dict[str, str]):
     for key in target:
         value = target[key] if (target[key] or key not in source) else source[key]
         target[key] = value
     return target
+
+def recursive_find(soup: T.Union[bs4.BeautifulSoup, bs4.Tag], pairs: T.List[T.List]):
+    if soup is None:
+        return None
+    if not len(pairs) or not len(soup.contents) or soup.findChild(pairs[0][0]) is None:
+        soup = soup.get_text() if soup.string is None else soup.string
+        if soup is None:
+            return None
+        return soup.strip()
+    soup = soup.find(*pairs[0])
+
+    return recursive_find(soup, pairs[1:])
 
 def validate():
     def helper(data: T.Dict[str, str]):
@@ -129,9 +141,10 @@ def validate():
                     bad_data.append(scrape_dir)
                 output[scrape_dir] = missing_fields 
         else:
-            output[scrape_dir] = ['everything']
-            bad_data.append(scrape_dir)
-            print(bad_data)
+            if '.' not in scrape_dir:
+                output[scrape_dir] = ['everything']
+                bad_data.append(scrape_dir)
+                print(bad_data)
 
     with open(invalid_path, 'w', encoding='utf-8') as file:
         json.dump(bad_data, file, indent=2)
