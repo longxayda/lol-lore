@@ -197,6 +197,9 @@ def run():
             if champ['name'].lower() == champ_name or champ['ref_name'] == champ_name.lower():
                 output.add(get_champ_full_info(champ)['ref_name'])
                 break
+            
+        if not len(output):
+            print('No champion named %s' % champ_name)
     else:
         retries = 10
         invalid_path = JSON_DIRECTORY_PATH + '/invalid.json'
