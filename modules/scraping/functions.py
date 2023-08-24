@@ -4,7 +4,7 @@ import sys
 import bs4
 import json
 import typing as T
-import scraping.scraping.utilities as utilities
+import modules.scraping.utilities as utilities
 
 ROOT_DIRECTORY = utilities.get_root_directory()
 OUTPUT_DIRECTORY = ROOT_DIRECTORY + '/output/scraping'

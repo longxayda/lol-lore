@@ -4,7 +4,7 @@ import json
 import time
 import typing as T
 import concurrent.futures
-import scraping.scraping.constants as constants
+import modules.scraping.constants as constants
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 
