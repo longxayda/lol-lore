@@ -2,14 +2,14 @@ import os
 import bs4
 import json
 import typing as T
-import modules.general.constants
 import modules.general.utilities
+import modules.scraping.constants
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 
 
 def get_content(
-    command: str, champion: str = "", base_url: str = modules.general.constants.URL
+    command: str, champion: str = "", base_url: str = modules.scraping.constants.URL
 ):
     def build_url():
         direction = {

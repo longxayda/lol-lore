@@ -1,5 +1,5 @@
 DB_HOST = "127.0.0.1"
-DB_USER = "nhata"
+DB_USER = "postgres"
 DB_PASSWORD = "123"
 DB_NAME = "loldata"
 
