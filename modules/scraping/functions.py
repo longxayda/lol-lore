@@ -240,7 +240,7 @@ def run():
             print("List of target champs:", list(bad_champs))
             champs = list(filter(lambda champ: champ["ref_name"] in bad_champs, champs))
             print("Number of retries left:", retries)
-            result = modules.scraping.utilities.parallelize(
+            result = modules.general.utilities.parallelize(
                 champs, get_champ_full_info, 120
             )
             output.update([record["ref_name"] for record in result])
