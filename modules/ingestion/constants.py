@@ -1,6 +1,6 @@
 DB_HOST = "127.0.0.1"
 DB_USER = "postgres"
-DB_PASSWORD = "123"
+DB_PASSWORD = "maylaai2000"
 DB_NAME = "loldata"
 
 SCHEMAS = {

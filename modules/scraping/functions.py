@@ -118,7 +118,7 @@ def get_champ(data: T.Dict) -> T.List[T.Dict[str, str]]:
         with open(json_path, "r", encoding="utf-8") as file:
             temp = json.load(file)
 
-        output = modules.scraping.utilities.coalesce(temp, output)
+        output = modules.general.utilities.coalesce(temp, output)
 
     with open(json_path, "w") as file:
         json.dump(output, file, indent=2)
@@ -168,7 +168,7 @@ def get_lore(data: T.Dict[str, str]) -> T.Dict[str, str]:
 
     os.makedirs(json_directory_path, exist_ok=True)
 
-    output = modules.scraping.utilities.coalesce(temp, output)
+    output = modules.general.utilities.coalesce(temp, output)
 
     with open(json_path, "w") as file:
         json.dump(output, file, indent=2)
